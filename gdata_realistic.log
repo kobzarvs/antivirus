@@ -1,0 +1,37 @@
+# G DATA Total Security for Windows log - realistic format  
+# Generated for testing malware detection parsing
+2025-06-30 07:55:00 G DATA Total Security Service initialization started
+2025-06-30 07:55:01 G DATA Total Security Engine version: 25.6.0.12345
+2025-06-30 07:55:01 G DATA Total Security Virus signature database: 25.30892 (2025-06-30)
+2025-06-30 07:55:02 G DATA Total Security Real-time protection: ON
+2025-06-30 07:55:02 G DATA Total Security Mail protection: ON
+2025-06-30 07:55:03 G DATA Total Security Web protection: ON
+2025-06-30 08:00:00 G DATA Total Security Scheduled system scan started
+2025-06-30 08:00:15 G DATA Total Security Scanning boot sectors and system files
+2025-06-30 08:15:42 G DATA Total Security Scanning C:\Program Files\...
+2025-06-30 08:30:18 G DATA Total Security Scanning C:\Windows\...
+2025-06-30 08:45:05 G DATA Total Security Scanning user directories
+2025-06-30 09:00:22 G DATA Total Security System scan completed. Files scanned: 187,456. Threats found: 0
+2025-06-30 11:00:00 G DATA Total Security Virus signature update initiated
+2025-06-30 11:00:05 G DATA Total Security Virus signature database updated to: 25.30893
+2025-06-30 12:30:00 G DATA Total Security Firewall monitoring active
+2025-06-30 14:15:33 G DATA Total Security File access detected: C:\Users\Пользователь\Downloads\eicar.com.txt
+2025-06-30 14:15:33 G DATA Total Security [VIRUS FOUND] DOS/EICAR_Test_File
+2025-06-30 14:15:33 G DATA Total Security Location: C:\Users\Пользователь\Downloads\eicar.com.txt
+2025-06-30 14:15:33 G DATA Total Security Action: File moved to quarantine
+2025-06-30 14:15:34 G DATA Total Security Quarantine: Entry added - eicar.com.txt
+2025-06-30 15:00:00 G DATA Total Security Banking protection active
+2025-06-30 16:45:12 G DATA Total Security User accessed quarantine manager
+2025-06-30 16:45:15 G DATA Total Security User restored file: eicar.com.txt to C:\Users\Пользователь\Desktop\
+2025-06-30 16:45:15 G DATA Total Security File access detected: C:\Users\Пользователь\Desktop\eicar.com.txt
+2025-06-30 16:45:15 G DATA Total Security [VIRUS FOUND] DOS/EICAR_Test_File
+2025-06-30 16:45:15 G DATA Total Security Location: C:\Users\Пользователь\Desktop\eicar.com.txt
+2025-06-30 16:45:15 G DATA Total Security Action: File deleted permanently
+2025-06-30 17:00:00 G DATA Total Security Identity protection monitoring active
+2025-06-30 18:30:00 G DATA Total Security Exploit protection: No threats detected
+2025-06-30 19:00:00 G DATA Total Security Virus signature update initiated
+2025-06-30 19:00:03 G DATA Total Security Virus signature database updated to: 25.30894
+2025-06-30 20:15:00 G DATA Total Security USB device scan: No threats detected
+2025-06-30 21:00:00 G DATA Total Security Backup monitor: Last backup successful
+2025-06-30 22:00:00 G DATA Total Security Daily statistics: Scanned files: 2,847. Blocked threats: 2
+2025-06-30 23:59:57 G DATA Total Security All protection modules operational

@@ -1,0 +1,26 @@
+# Dr.Web Desktop Security Suite log - realistic format
+# Generated for testing malware detection parsing
+2025-06-30 08:00:15 Dr.Web Desktop Security Suite Service started
+2025-06-30 08:00:16 Dr.Web Desktop Security Suite Engine version: 7.0.56.4050
+2025-06-30 08:00:16 Dr.Web Desktop Security Suite Virus database version: 2025.06.30.00001
+2025-06-30 08:15:22 Dr.Web Desktop Security Suite Virus database updated to version 2025.06.30.00002
+2025-06-30 09:00:00 Dr.Web Desktop Security Suite Scheduled scan started
+2025-06-30 09:00:05 Dr.Web Desktop Security Suite Scanning C:\Windows\System32\...
+2025-06-30 09:15:33 Dr.Web Desktop Security Suite Scanning C:\Program Files\...
+2025-06-30 09:30:12 Dr.Web Desktop Security Suite Scanning C:\Users\...
+2025-06-30 09:45:28 Dr.Web Desktop Security Suite Scheduled scan completed. Files scanned: 245,678. Threats found: 0
+2025-06-30 12:00:00 Dr.Web Desktop Security Suite Real-time protection: monitoring active
+2025-06-30 14:30:45 Dr.Web Desktop Security Suite File access detected: C:\Users\Пользователь\Downloads\eicar.com.txt
+2025-06-30 14:30:45 Dr.Web Desktop Security Suite THREAT DETECTED: DOS/EICAR_Test_File in C:\Users\Пользователь\Downloads\eicar.com.txt
+2025-06-30 14:30:45 Dr.Web Desktop Security Suite Action taken: File quarantined
+2025-06-30 14:30:46 Dr.Web Desktop Security Suite Quarantine: C:\Users\Пользователь\Downloads\eicar.com.txt moved to quarantine
+2025-06-30 15:22:13 Dr.Web Desktop Security Suite User attempted to access quarantined file
+2025-06-30 15:22:13 Dr.Web Desktop Security Suite THREAT DETECTED: DOS/EICAR_Test_File in quarantine access attempt
+2025-06-30 15:22:13 Dr.Web Desktop Security Suite Action taken: Access denied
+2025-06-30 16:00:00 Dr.Web Desktop Security Suite Virus database update check initiated
+2025-06-30 16:00:05 Dr.Web Desktop Security Suite Virus database updated to version 2025.06.30.00003
+2025-06-30 18:45:21 Dr.Web Desktop Security Suite Real-time scan: C:\Users\Пользователь\Downloads\test_file.exe
+2025-06-30 18:45:21 Dr.Web Desktop Security Suite File scan completed: No threats detected
+2025-06-30 20:15:35 Dr.Web Desktop Security Suite Web filter blocked access to suspicious URL
+2025-06-30 22:00:00 Dr.Web Desktop Security Suite Daily statistics: Files scanned: 1,247. Threats detected: 2. Threats neutralized: 2
+2025-06-30 23:59:59 Dr.Web Desktop Security Suite Service running normally. Protection status: Active
