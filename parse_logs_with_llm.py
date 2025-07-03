@@ -18,7 +18,7 @@ import calendar
 # --- Configuration ---
 OLLAMA_URL = "http://localhost:11434/api/generate"
 LMSTUDIO_URL = "http://localhost:1234/v1/chat/completions"
-MAX_CHARS_PER_CHUNK = 20000
+MAX_CHARS_PER_CHUNK = 40000
 LLM_TIMEOUT = 300
 SYSTEM_PROMPT = r"""### ROLE ###
 You are an automated data extraction bot specialized in cybersecurity.
@@ -44,37 +44,19 @@ Your mission is to parse raw antivirus log entries and extract only the malware 
 - **signature**: Provide the clean name of the malware. You MUST strip all prefixes, such as `Virus:`, `Malware:`, `Threat:`, `Name=`, etc.
 - **timestamp**: Format the event time strictly as `YYYY-MM-DD HH:MM:SS`.
 - If no detection events are found, you MUST return an empty array: `[]`.
-
-### EXAMPLE ###
-**Input Log Lines:**
-2025-01-01 10:15:45 G DATA INFO Virus found Name=EICAR_Test_File Path=C:\Users\Downloads\eicar.com Action=Deleted
-Start time: 01.07.2025 17:20:40
-...
-Object: eicar.com.txt
-	Path: C:\Users\Пользователь\Downloads
-	Status: File quarantined.
-	Virus: EICAR-Test-File (not a virus)
-path                        threat           timestamp
-\\?\D:\Keygen.exe         Application.KeyGen.GO 2025-07-01 23:53:15
-
-**Required JSON Output:**
-[
-  {
-    "signature": "EICAR_Test_File",
-    "timestamp": "2025-01-01 10:15:45"
-  },
-  {
-    "signature": "EICAR-Test-File (not a virus)",
-    "timestamp": "2025-07-01 17:20:40"
-  },
-  {
-    "signature": "Application.KeyGen.GO",
-    "timestamp": "2025-07-01 23:53:15"
-  }
-]
 """
 
-# --- Universal Timestamp Parsers (for line-based logs) ---
+# --- Universal Timestamp Parsing Pipeline ---
+
+def parse_timestamp_gdata_v2_header(line):
+    """Parses the unique header of a G-Data v2 log."""
+    try:
+        header_parts = line.split('\t')
+        if len(header_parts) > 2 and 'Virus check' in header_parts[3]:
+            return datetime.datetime.strptime(header_parts[2], "%Y-%m-%d %H:%M:%S")
+    except (ValueError, IndexError):
+        return None
+    return None
 
 def parse_timestamp_drweb(line):
     try:
@@ -117,74 +99,58 @@ def parse_timestamp_db_dump(line):
 
 def parse_line_for_timestamp(line):
     """Tries a pipeline of parsing functions. Returns the first valid timestamp."""
-    parsers = [parse_timestamp_mpdetection, parse_timestamp_drweb, parse_timestamp_standard, parse_timestamp_db_dump]
+    parsers = [
+        parse_timestamp_mpdetection,
+        parse_timestamp_drweb,
+        parse_timestamp_standard,
+        parse_timestamp_db_dump
+    ]
     for parser in parsers:
         if timestamp := parser(line):
             return timestamp
     return None
 
-# --- Log Format Sniffing and Processing ---
-
-def get_log_format(lines):
-    """Sniffs the log content to determine its format."""
-    if not lines:
-        return 'unknown'
-    # G-Data v2 has a unique tab-separated header
-    if '\t' in lines[0] and 'Virus check' in lines[0]:
-        return 'gdata_v2'
-    # Add other format sniffers here if needed
-    return 'line_based'
-
-def process_gdata_v2(lines, start_dt, end_dt):
-    """Handles G-Data logs with a single global timestamp."""
-    try:
-        header_parts = lines[0].split('\t')
-        if len(header_parts) > 2:
-            ts = datetime.datetime.strptime(header_parts[2], "%Y-%m-%d %H:%M:%S")
-            if start_dt <= ts <= end_dt:
-                # Return all relevant log lines (after header description)
-                return [line.strip() for line in lines[9:] if line.strip()]
-    except (ValueError, IndexError):
-        return []
-    return []
-
-def process_line_based(lines, start_dt, end_dt):
-    """Handles logs with a timestamp on each line."""
-    lines_to_yield = []
-    for line in lines:
-        if line.startswith("#") or not line.strip():
-            continue
-        ts = parse_line_for_timestamp(line)
-        if ts and start_dt <= ts <= end_dt:
-            lines_to_yield.append(line.strip())
-    return lines_to_yield
+# --- Main File Filtering Logic ---
 
 def filter_log_lines(path: pathlib.Path, start_dt, end_dt):
-    """Main router for filtering logs based on their format."""
+    """
+    Reads a log file and yields lines that are within the date range.
+    Handles both per-line timestamps and global timestamps.
+    """
     encodings = ['utf-8', 'utf-16', 'latin1', 'cp1251']
     for encoding in encodings:
         try:
             with path.open(encoding=encoding, errors='ignore') as f:
                 lines = f.readlines()
-            
-            log_format = get_log_format(lines)
 
-            if log_format == 'gdata_v2':
-                return process_gdata_v2(lines, start_dt, end_dt)
-            elif log_format == 'line_based':
-                return process_line_based(lines, start_dt, end_dt)
-            else:
-                # If format is unknown, try line-based as a default
-                return process_line_based(lines, start_dt, end_dt)
+            # Strategy 1: Check for G-Data v2 format with a global timestamp
+            if lines:
+                global_ts = parse_timestamp_gdata_v2_header(lines[0])
+                if global_ts:
+                    if start_dt <= global_ts <= end_dt:
+                        yield from (line.strip() for line in lines[9:] if line.strip())
+                    return # This file is handled, move to the next one
+
+            # Strategy 2: Fallback to line-by-line timestamp checking for all other formats
+            lines_to_yield = []
+            for line in lines:
+                if line.startswith("#") or not line.strip():
+                    continue
+                ts = parse_line_for_timestamp(line)
+                if ts and start_dt <= ts <= end_dt:
+                    lines_to_yield.append(line.strip())
+            
+            if lines_to_yield:
+                yield from lines_to_yield
+            return # Successfully processed
         except (UnicodeDecodeError, UnicodeError):
             continue
-    print(f"Warning: Could not decode file {path} with any supported encodings.", file=sys.stderr)
-    return []
+    print(f"Warning: Could not decode or parse file {path} with any supported method.", file=sys.stderr)
 
-# --- Core Application Logic ---
+
+# --- Core Application Logic (unchanged) ---
 
 def get_log_files(log_pattern: str):
-    # ... (this function remains the same)
     if '*' in log_pattern or '?' in log_pattern:
         files = glob.glob(log_pattern, recursive=True)
         if not files:
@@ -199,7 +165,6 @@ def get_log_files(log_pattern: str):
         return [log_path]
 
 def create_chunks(lines):
-    # ... (this function remains the same)
     chunks = []
     current_chunk = []
     current_length = 0
@@ -215,14 +180,12 @@ def create_chunks(lines):
     return chunks
 
 def call_llm(model: str, prompt: str, provider: str = "ollama", timeout: int = LLM_TIMEOUT):
-    # ... (this function remains the same)
     if provider.lower() == "lmstudio":
         return call_llm_lmstudio(model, prompt, timeout)
     else:
         return call_llm_ollama(model, prompt, timeout)
 
 def call_llm_ollama(model: str, prompt: str, timeout: int = LLM_TIMEOUT):
-    # ... (this function remains the same)
     payload = {"model": model, "prompt": prompt, "system": SYSTEM_PROMPT, "stream": False}
     r = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
     r.raise_for_status()
@@ -230,7 +193,6 @@ def call_llm_ollama(model: str, prompt: str, timeout: int = LLM_TIMEOUT):
     return parse_llm_response(response_text)
 
 def call_llm_lmstudio(model: str, prompt: str, timeout: int = LLM_TIMEOUT):
-    # ... (this function remains the same)
     payload = {
         "model": model,
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
@@ -247,7 +209,6 @@ def call_llm_lmstudio(model: str, prompt: str, timeout: int = LLM_TIMEOUT):
         raise e
 
 def parse_llm_response(response_text: str):
-    # ... (this function remains the same)
     try:
         return json.loads(response_text)
     except json.JSONDecodeError:
