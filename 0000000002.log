@@ -1,0 +1,58 @@
+04	0000000002	2025-07-01 17:20:40	Virus check		3
+Description (The entire file is written in UTF-8 format):
+Line 1 contains TAB separated: status, ID, local starttime, type, title.
+Status: 0=Ready 1=Running 2=Canceled 3=Error 4=Canceled (Infection) 5=Ready (Infection) 6=Error (Logfile not closed)
+Starting with line 10 the protocol entries are following, every single line is build like this:
+TAB separated: Level, color, style, text
+Level [0…9]: optional texts have a level > 0. Bits 0x40 (=Child) und 0x80 (=Parent) are eventually used to mark hierachical relationships like with scanned archives and its content.
+Color: 0=standard 1=black 2=blue 3=cyan 4=green 5=violet 6=red 7=yellow
+Style: Combination of (0=Normal): 1=Bold 2=Italic 4=Underlined 8=Strikeout
+0	0	0	Virus check with G DATA TOTAL SECURITY
+0	0	0	Version 25.5.19.439 (13.06.2025)
+0	0	0	Virus signature dated 01.07.2025
+0	0	0	Start time: 01.07.2025 17:20:40
+0	0	0	Engine(s): Engine A (AVA 25.40522), Engine B (GD 27.40896)
+0	0	0	Heuristics: On
+0	0	0	Archives: On
+0	0	0	System areas: On
+0	0	0	Check rootkits: On
+0	0	0	
+0	0	0	Check system areas...
+0	0	0	Scanning all in-memory processes and references in Startup...
+0	0	0	Check for rootkits...
+0	0	0	Analysis terminated early: 01.07.2025 17:28:33
+0	0	0	    21347 files checked
+0	0	0	    3 infected files detected
+0	0	0	    0 suspicious files found
+0	0	0	
+0	0	0	
+0	0	0	Object: eicar.com.txt
+0	0	0		Path: C:\Users\Пользователь\Downloads
+0	0	0		Status: File quarantined. Restart required.
+0	6	0		Virus: EICAR-Test-File (not a virus) (Engine A), EICAR_TEST_FILE (Engine B)
+0	0	0	
+128	0	0	Archive: eicar_com.zip
+128	0	0		Path: C:\Users\Пользователь\Downloads
+128	0	0		Status: Virus detected
+128	6	0		Virus: EICAR-Test-File (not a virus) (Engine A), EICAR_TEST_FILE (Engine B)
+64	0	0	Object: eicar.com
+64	0	0		In archive: C:\Users\Пользователь\Downloads\eicar_com.zip
+64	0	0		Status: Virus detected
+64	6	0		Virus: EICAR-Test-File (not a virus)
+64	0	0	Object: eicar.com
+64	0	0		In archive: C:\Users\Пользователь\Downloads\eicar_com.zip
+64	0	0		Status: Virus detected
+64	6	0		Virus: EICAR_TEST_FILE
+0	0	0	
+128	0	0	Archive: eicarcom2.zip
+128	0	0		Path: C:\Users\Пользователь\Downloads
+128	0	0		Status: Virus detected
+128	6	0		Virus: EICAR-Test-File (not a virus) (Engine A), EICAR_TEST_FILE (Engine B)
+64	0	0	Object: eicar_com.zip=>eicar.com
+64	0	0		In archive: C:\Users\Пользователь\Downloads\eicarcom2.zip
+64	0	0		Status: Virus detected
+64	6	0		Virus: EICAR-Test-File (not a virus)
+64	0	0	Object: eicar_com.zip=>eicar.com
+64	0	0		In archive: C:\Users\Пользователь\Downloads\eicarcom2.zip
+64	0	0		Status: Virus detected
+64	6	0		Virus: EICAR_TEST_FILE

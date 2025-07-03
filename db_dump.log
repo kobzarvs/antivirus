@@ -1,0 +1,13 @@
+path                        threat           timestamp
+hkey_users\.default\software\microsoft\windows nt\currentversion\appcompatflags\compatibilityassistant\store\c:\programfiles\windowsapps\b9eced6f.asuspcassistant_3.0.11.0_x64__qmba6cd70vzyy\moduledll\sci\selfupdate.exe         Application.KeyGen.GO 2025-07-01 23:53:16
+hkey_users\.default\software\microsoft\windows nt\currentversion\appcompatflags\compatibilityassistant\store\c:\windows\system32\driverstore\filerepository\asussci2.inf_amd64_aeff025f0108fb44\asussoftwaremanager\asusupdatechecker.exe         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\classes\typelib\{7c2047a4-47f1-4eef-baf5-082e4aab8b38}         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\classes\interface\{9db454d7-0207-4b21-84e9-847b52b8eed3}         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\wow6432node\classes\interface\{9db454d7-0207-4b21-84e9-847b52b8eed3}         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\microsoft\internet explorer\main\default_page_url         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\microsoft\internet explorer\main\default_search_url         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\wow6432node\microsoft\internet explorer\main\default_page_url         Application.KeyGen.GO 2025-07-01 23:53:16
+hklm\software\wow6432node\microsoft\internet explorer\main\default_search_url         Application.KeyGen.GO 2025-07-01 23:53:16
+<System>=>HKEY_USERS\.DEFAULT\SOFTWARE\CLASSES\LOCAL SETTINGS\MRTCACHE\C:%5CPROGRAM FILES%5CWINDOWSAPPS%5CMICROSOFT.STOREPURCHASEAPP_11811.1001.18.0_X64__8WEKYB3D8BBWE%5CRESOURCES.PRI\1D5AD0BFA5DAB5A\D0332875\@{C:\Program Files\WindowsApps\Microsoft.StorePurchaseApp_11811.1001.18.0_x64__8wekyb3d8bbwe\resources.pri? ms-resource:///resources/Description}=>This app is required for in app purchase, rating and review, and token redemption functionality in Windows 10. It is automatically installed on your device.                               2025-07-01 23:53:38
+\\?\C:\Users\Пользователь\Downloads\eicar.com.txt EICAR-Test-File (not a virus) 2025-07-02 00:48:05
+\\?\C:\Users\Пользователь\Downloads\95ee2760-9730-44f8-95f0-b3d33df72b18.tmp EICAR-Test-File (not a virus) 2025-07-02 00:49:54
