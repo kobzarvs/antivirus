@@ -1,10 +1,3 @@
-"""
-parse_logs_with_llm.py
-------------------------------------
-Parse various Windows AV log files for malware detections in a given time range
-using local LLM models via Ollama or LM Studio.
-"""
-
 import argparse
 import datetime
 import json
@@ -18,8 +11,9 @@ import calendar
 # --- Configuration ---
 OLLAMA_URL = "http://localhost:11434/api/generate"
 LMSTUDIO_URL = "http://localhost:1234/v1/chat/completions"
-MAX_CHARS_PER_CHUNK = 40000
+MAX_CHARS_PER_CHUNK = 5000
 LLM_TIMEOUT = 300
+
 SYSTEM_PROMPT = r"""### ROLE ###
 You are an automated data extraction bot specialized in cybersecurity.
 
@@ -38,6 +32,54 @@ Your mission is to parse raw antivirus log entries and extract only the malware 
     *   **Columnar Data:** If the log is structured in columns and one column is named `threat`, you MUST extract the value from that column as the signature.
 5.  **Ignore Non-Detection Events:** You MUST ignore all routine operational messages.
 
+### LOG FORMAT EXAMPLES ###
+**Dr.Web format:**
+```
+2025-Jul-01 18:47:24.322968 [ 4300] [INF] [LOG] Starting service...
+2025-Jul-01 18:47:24.465171 [ 5656] [INF] [service] [service_main] !Set SERVICE_RUNNING successfully...Start
+```
+
+**Microsoft Defender format:**
+```
+2025-06-30T16:46:39.281 DETECTION Virus:DOS/EICAR_Test_File file:C:\Users\Пользователь\Downloads\eicar.com.txt
+2025-06-30T16:48:31.855 DETECTION Virus:DOS/EICAR_Test_File file:C:\Users\Пользователь\Downloads\eicar.com.txt
+```
+
+**Columnar format (database dump) first chunk:**
+```
+| quarId                               | path                                                                                                                                                                                                                   | threat                        |   status |   size |   quartime |
+|:-------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------------------|---------:|-------:|-----------:|
+| 3f4bf7b4-d635-4c6c-917e-fa2735aac905 | \\?\D:\DISTRIB\WinRAR v5.20 Beta 2\Keygen\Keygen.exe                                                                                                                                                                   | Application.KeyGen.GO         |        3 | 104960 | 1751403195 |
+| d1727ba0-4712-4961-b9fd-eaf925ccbc73 | hklm\software\wow6432node\microsoft\internet explorer\main\default_search_url                                                                                                                                          |                               |        3 |    338 | 1751403196 |
+| 963e4e68-acbb-49c1-8575-3f055192a648 | <System>=>HKEY_USERS\.DEFAULT\SOFTWARE\CLASSES\LOCAL SETTINGS\MRTCACHE\C:%5CPROGRAM FILES%5CWINDOWSAPPS%5CMICROSOFT.STOREPURCHASEAPP_11811.1001.18.0_X64__8WEKYB3D8BBWE%5CRESOURCES.PRI\1D5AD0BFA5DAB5A\D0332875\@{C:\P|                               |        1 |    156 | 1751403218 |
+| b7ee48a6-0c13-441c-bed3-815ca63c1a6a | \\?\C:\Users\Пользователь\Downloads\eicar.com.txt                                                                                                                                                                      | EICAR-Test-File (not a virus) |        3 |     68 | 1751406485 |
+```
+
+**Columnar format (database dump) other chunks:**
+```
+| 3f4bf7b4-d635-4c6c-917e-fa2735aac905 | \\?\D:\DISTRIB\WinRAR v5.20 Beta 2\Keygen\Keygen.exe                                                                                                                                                                   | Application.KeyGen.GO         |        3 | 104960 | 1751403195 |
+| d1727ba0-4712-4961-b9fd-eaf925ccbc73 | hklm\software\wow6432node\microsoft\internet explorer\main\default_search_url                                                                                                                                          |                               |        3 |    338 | 1751403196 |
+| 963e4e68-acbb-49c1-8575-3f055192a648 | <System>=>HKEY_USERS\.DEFAULT\SOFTWARE\CLASSES\LOCAL SETTINGS\MRTCACHE\C:%5CPROGRAM FILES%5CWINDOWSAPPS%5CMICROSOFT.STOREPURCHASEAPP_11811.1001.18.0_X64__8WEKYB3D8BBWE%5CRESOURCES.PRI\1D5AD0BFA5DAB5A\D0332875\@{C:\P|                               |        1 |    156 | 1751403218 |
+| b7ee48a6-0c13-441c-bed3-815ca63c1a6a | \\?\C:\Users\Пользователь\Downloads\eicar.com.txt                                                                                                                                                                      | EICAR-Test-File (not a virus) |        3 |     68 | 1751406485 |
+```
+
+**G DATA format 1:**
+```
+Start time: 2025-07-01 09:15:00
+Virus found: Win32.Trojan.Agent
+File: C:\Temp\suspicious.exe
+```
+
+**G DATA format 2:**
+```
+04	0000000002	2025-07-01 17:20:40	Virus check		3
+
+64	0	0	Object: eicar_com.zip=>eicar.com
+64	0	0		In archive: C:\Users\Пользователь\Downloads\eicarcom2.zip
+64	0	0		Status: Virus detected
+64	6	0		Virus: EICAR-Test-File (not a virus)
+```
+
 ### OUTPUT FORMAT ###
 - Your output MUST be a valid JSON array.
 - Each object in the array represents a single detection and MUST contain exactly two keys: `signature` and `timestamp`.
@@ -48,7 +90,7 @@ Your mission is to parse raw antivirus log entries and extract only the malware 
 
 # --- Universal Timestamp Parsing Pipeline ---
 
-def parse_timestamp_gdata_v2_header(line):
+def parse_timestamp_gdata_header(line):
     """Parses the unique header of a G-Data v2 log."""
     try:
         header_parts = line.split('\t')
@@ -97,56 +139,17 @@ def parse_timestamp_db_dump(line):
     except ValueError:
         return None
 
-def parse_line_for_timestamp(line):
-    """Tries a pipeline of parsing functions. Returns the first valid timestamp."""
-    parsers = [
-        parse_timestamp_mpdetection,
-        parse_timestamp_drweb,
-        parse_timestamp_standard,
-        parse_timestamp_db_dump
-    ]
-    for parser in parsers:
-        if timestamp := parser(line):
-            return timestamp
-    return None
-
 # --- Main File Filtering Logic ---
 
-def filter_log_lines(path: pathlib.Path, start_dt, end_dt):
-    """
-    Reads a log file and yields lines that are within the date range.
-    Handles both per-line timestamps and global timestamps.
-    """
+def get_log_lines(path: pathlib.Path):
     encodings = ['utf-8', 'utf-16', 'latin1', 'cp1251']
     for encoding in encodings:
         try:
-            with path.open(encoding=encoding, errors='ignore') as f:
-                lines = f.readlines()
-
-            # Strategy 1: Check for G-Data v2 format with a global timestamp
-            if lines:
-                global_ts = parse_timestamp_gdata_v2_header(lines[0])
-                if global_ts:
-                    if start_dt <= global_ts <= end_dt:
-                        yield from (line.strip() for line in lines[9:] if line.strip())
-                    return # This file is handled, move to the next one
-
-            # Strategy 2: Fallback to line-by-line timestamp checking for all other formats
-            lines_to_yield = []
-            for line in lines:
-                if line.startswith("#") or not line.strip():
-                    continue
-                ts = parse_line_for_timestamp(line)
-                if ts and start_dt <= ts <= end_dt:
-                    lines_to_yield.append(line.strip())
-            
-            if lines_to_yield:
-                yield from lines_to_yield
-            return # Successfully processed
-        except (UnicodeDecodeError, UnicodeError):
+            with path.open(encoding=encoding) as f:
+                return f.readlines()
+        except:
             continue
-    print(f"Warning: Could not decode or parse file {path} with any supported method.", file=sys.stderr)
-
+    return []
 
 # --- Core Application Logic (unchanged) ---
 
@@ -179,23 +182,15 @@ def create_chunks(lines):
         chunks.append("\n".join(current_chunk))
     return chunks
 
-def call_llm(model: str, prompt: str, provider: str = "ollama", timeout: int = LLM_TIMEOUT):
-    if provider.lower() == "lmstudio":
-        return call_llm_lmstudio(model, prompt, timeout)
-    else:
-        return call_llm_ollama(model, prompt, timeout)
-
-def call_llm_ollama(model: str, prompt: str, timeout: int = LLM_TIMEOUT):
-    payload = {"model": model, "prompt": prompt, "system": SYSTEM_PROMPT, "stream": False}
-    r = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
-    r.raise_for_status()
-    response_text = r.json().get("response", "")
-    return parse_llm_response(response_text)
-
-def call_llm_lmstudio(model: str, prompt: str, timeout: int = LLM_TIMEOUT):
+def call_llm(model: str, prompt: str, start_date: str, end_date: str, timeout: int = LLM_TIMEOUT):
+    CONTEXT = SYSTEM_PROMPT + f"""
+    ### Filter Results by date range
+    - from {start_date}
+    - to {end_date}
+    """
     payload = {
         "model": model,
-        "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
+        "messages": [{"role": "system", "content": CONTEXT}, {"role": "user", "content": prompt}],
         "stream": False, "temperature": 0.1
     }
     try:
@@ -233,44 +228,27 @@ def main():
     parser.add_argument("--provider", default="ollama", choices=["ollama", "lmstudio"], help="LLM provider")
     args = parser.parse_args()
 
-    start_dt = datetime.datetime.strptime(args.start, "%Y-%m-%d %H:%M:%S")
-    end_dt = datetime.datetime.strptime(args.end, "%Y-%m-%d %H:%M:%S")
-
     log_files = get_log_files(args.log)
     
-    all_relevant_lines = []
-    file_count = 0
     for log_path in log_files:
         print(f"Filtering file: {log_path}", file=sys.stderr)
-        lines = filter_log_lines(log_path, start_dt, end_dt)
-        if lines:
-            file_count += 1
-            all_relevant_lines.append(f"=== Log File: {log_path.name} ===")
-            all_relevant_lines.extend(lines)
-            all_relevant_lines.append("=" * 20)
+        lines = get_log_lines(log_path)
+        log_chunks = create_chunks(lines)
+        print(f"Split logs into {len(log_chunks)} chunks for processing.", file=sys.stderr)
 
-    if not all_relevant_lines:
-        print("No relevant log entries found in the specified date range.", file=sys.stderr)
-        print("[]")
-        return
+        final_results = []
+        for i, chunk in enumerate(log_chunks):
+            print(f"Querying LLM for chunk {i+1}/{len(log_chunks)}...", file=sys.stderr)
+            try:
+                result = call_llm(args.model, chunk, args.start, args.end, LLM_TIMEOUT)
+                if isinstance(result, list) and result:
+                    final_results.extend(result)
+            except requests.exceptions.RequestException as e:
+                print(f"Error calling LLM for chunk {i+1}: {e}", file=sys.stderr)
+                continue
 
-    print(f"Found {len(all_relevant_lines) - (2 * file_count)} relevant log entries.", file=sys.stderr)
-
-    log_chunks = create_chunks(all_relevant_lines)
-    print(f"Split logs into {len(log_chunks)} chunks for processing.", file=sys.stderr)
-
-    final_results = []
-    for i, chunk in enumerate(log_chunks):
-        print(f"Querying LLM for chunk {i+1}/{len(log_chunks)}...", file=sys.stderr)
-        try:
-            result = call_llm(args.model, chunk, args.provider)
-            if isinstance(result, list) and result:
-                final_results.extend(result)
-        except requests.exceptions.RequestException as e:
-            print(f"Error calling LLM for chunk {i+1}: {e}", file=sys.stderr)
-            continue
-
-    print(json.dumps(final_results, indent=2, ensure_ascii=False))
+        print(json.dumps(final_results, indent=2, ensure_ascii=False))
+        print(f"Found: {len(final_results)} records")
 
 if __name__ == "__main__":
     main()
